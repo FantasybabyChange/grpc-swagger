@@ -19,11 +19,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -111,19 +107,19 @@ public class GrpcController {
         if (!AppConfig.enableListService()) {
             return Result.error("Not support this action.");
         }
-       return Result.success(getServiceConfigs());
+        return Result.success(getServiceConfigs());
     }
 
-    @RequestMapping("/register")
-    public Result<Object> registerServices(RegisterParam registerParam) {
+    @RequestMapping(value = "/register/{host}/{port}", method = RequestMethod.GET)
+    public Result<Object> registerServices(@PathVariable String host, @PathVariable Integer port) {
 
-        List<FileDescriptorSet> fileDescriptorSets = registerByIpAndPort(registerParam.getHost(), registerParam.getPort());
+        List<FileDescriptorSet> fileDescriptorSets = registerByIpAndPort(host, port);
         if (CollectionUtils.isEmpty(fileDescriptorSets)) {
             return error("no services find");
         }
         List<String> serviceNames = getServiceNames(fileDescriptorSets);
         List<ServiceConfig> serviceConfigs = serviceNames.stream()
-                .map(name -> new ServiceConfig(name, registerParam.getHostAndPortText()))
+                .map(name -> new ServiceConfig(name, host + ":" + port))
                 .peek(ServiceConfigManager::addServiceConfig)
                 .collect(toList());
         return Result.success(serviceConfigs);
